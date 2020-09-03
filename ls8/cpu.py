@@ -82,8 +82,42 @@ class CPU:
         while self.running:
             IR = str(self.ram_read(self.pc))
 
-            # HALT BASE CASE
-            if IR == "00000001":
-                # set running to false
-                self.running = False
-                self.pc += 1
+# Meanings of the bits in the first byte of each instruction: `AABCDDDD`
+
+            # * `AA` Number of operands for this opcode, 0-2
+            # * `B` 1 if this is an ALU operation
+            # * `C` 1 if this instruction sets the PC
+            # * `DDDD` Instruction identifier
+            # break down the information above and set it to variables
+            # `AA B C DDDD`
+
+            opco = IR[:2]  # the op code is the first two or "AA"
+            aluOp = IR[2:3]  # the alu operation is "b"
+            movePc = IR[3:4]  # this is the amount to move the pc
+            instructId = IR[4:]  # this is the instruction ID
+
+            # binary 0b or 0B
+            # print("For 1010, int is:", int('1010', 2))
+            # print("For 0b1010, int is:", int('0b1010', 2))
+            # THE ABOVE CODE IS A RESOURCE From PROGRAMMIZ.com
+
+            if int(opco, 2) == 2:  # if there are two values (print, register, value)
+                # label the first operand
+                opA = int(self.ram_read(self.pc + 1), 2)
+                # label the second operand
+                opB = int(self.ram_read(self.pc + 1), 2)
+            elif int(opco, 2) == 1:  # else if there is one value (print)
+                opA = int(self.ram_read(self.pc + 1), 2)
+
+            # this is the load
+            if IR == '10000010':  # load instructions with ops above
+                self.reg[opA] = opB
+                self.pc += 3  # this uses 3 movements
+            # this is the print
+            elif IR == '01000111':
+                x = self.reg[opA]  # set the value to the printing value
+                print(x)  # print the value
+                self.pc += 2  # this takes two movements
+            elif IR == '00000001':  # halt
+                self.running = False  # set running to false
+                self.pc += 1  # this takes one movement.
