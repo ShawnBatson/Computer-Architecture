@@ -8,19 +8,13 @@ class CPU:
 
     def __init__(self):
         """Construct a new CPU."""
-        self.pc = 0,
-        self.reg = [0] * 8,
+        self.pc = 0
+        self.reg = [0] * 8
         self.ram = [0] * 256
-        self.running = True
-
-# `PC`: Program Counter, address of the currently executing instruction
-# `IR`: Instruction Register, contains a copy of the currently executing instruction
-# `MAR`: Memory Address Register, holds the memory address we're reading or writing
-# `MDR`: Memory Data Register, holds the value to write or the value just read
-# `FL`: Flags, see below
+        self.running = False
 
     def ram_read(self, MAR):
-        self.ram[MAR]
+        return self.ram[MAR]
 
     def ram_write(self, MAR, MDR):
         self.ram[MAR] = MDR
@@ -79,45 +73,42 @@ class CPU:
 
     def run(self):
         """Run the CPU."""
-        while self.running:
-            IR = str(self.ram_read(self.pc))
+        self.running = True
 
-# Meanings of the bits in the first byte of each instruction: `AABCDDDD`
+        while self.running == True:
 
-            # * `AA` Number of operands for this opcode, 0-2
-            # * `B` 1 if this is an ALU operation
-            # * `C` 1 if this instruction sets the PC
-            # * `DDDD` Instruction identifier
-            # break down the information above and set it to variables
-            # `AA B C DDDD`
+            IR = self.ram[self.pc]
 
-            opco = IR[:2]  # the op code is the first two or "AA"
-            aluOp = IR[2:3]  # the alu operation is "b"
-            movePc = IR[3:4]  # this is the amount to move the pc
-            instructId = IR[4:]  # this is the instruction ID
+            # opco = IR[:2]  # the op code is the first two or "AA"
+            # aluOp = IR[2:3]  # the alu operation is "b"
+            # movePc = IR[3:4]  # this is the amount to move the pc
+            # instructId = IR[4:]  # this is the instruction ID
 
             # binary 0b or 0B
             # print("For 1010, int is:", int('1010', 2))
             # print("For 0b1010, int is:", int('0b1010', 2))
             # THE ABOVE CODE IS A RESOURCE From PROGRAMMIZ.com
 
-            if int(opco, 2) == 2:  # if there are two values (print, register, value)
-                # label the first operand
-                opA = int(self.ram_read(self.pc + 1), 2)
-                # label the second operand
-                opB = int(self.ram_read(self.pc + 1), 2)
-            elif int(opco, 2) == 1:  # else if there is one value (print)
-                opA = int(self.ram_read(self.pc + 1), 2)
+            # if int(opco, 2) == 2:  # if there are two values (print, register, value)
+            #     # label the first operand
+            #     opA = self.ram_read(self.pc + 1)
+            #     # label the second operand
+            #     opB = self.ram_read(self.pc + 1)
+            # elif int(opco, 2) == 1:  # else if there is one value (print)
+            #     opA = self.ram_read(self.pc + 1)
 
             # this is the load
-            if IR == '10000010':  # load instructions with ops above
+            if IR == 0b10000010:  # load instructions with ops above
+                opA = self.ram[self.pc + 1]
+                opB = self.ram[self.pc + 2]
                 self.reg[opA] = opB
                 self.pc += 3  # this uses 3 movements
             # this is the print
-            elif IR == '01000111':
+            elif IR == 0b01000111:
+                opA = self.ram[self.pc + 1]
                 x = self.reg[opA]  # set the value to the printing value
                 print(x)  # print the value
                 self.pc += 2  # this takes two movements
-            elif IR == '00000001':  # halt
+            elif IR == 0b00000001:  # halt
                 self.running = False  # set running to false
-                self.pc += 1  # this takes one movement.
+                # self.pc += 1  # this takes one movement.
