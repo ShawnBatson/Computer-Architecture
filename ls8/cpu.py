@@ -16,29 +16,43 @@ class CPU:
     def ram_read(self, MAR):
         return self.ram[MAR]
 
-    def ram_write(self, MAR, MDR):
+    def ram_write(self, MDR, MAR):
         self.ram[MAR] = MDR
 
     def load(self):
         """Load a program into memory."""
-
         address = 0
+        if len(sys.argv) != 2:
+            print("Usage: example_cpu.py filename")
+            sys.exit(1)
 
-        # For now, we've just hardcoded a program:
+        try:
+            with open(f'examples/{sys.argv[1]}') as f:
+                for line in f:
+                    split_line = line.split('#')
+                    code_value = split_line[0].strip()
+                    if code_value == '':
+                        continue
+                    num = code_value
+                    self.ram[address] = num
+                    address += 1
+        except FileNotFoundError:
+            print(f'{sys.argv[1]} file not found')
+            sys.exit(2)
 
-        program = [
-            # From print8.ls8
-            0b10000010,  # LDI R0,8   # THIS is the initial register number 0, load data
-            0b00000000,  # this is the register number to load (0)
-            0b00001000,  # this is the value to load (number 8)
-            0b01000111,  # PRN R0 # this instruction is to print
-            0b00000000,  # this is register 0, the value that above instruction prints
-            0b00000001,  # HLT # this is the halt
-        ]
+    # program = [
+    #     # From print8.ls8
+    #     0b10000010,  # LDI R0,8   # THIS is the initial register number 0, load data
+    #     0b00000000,  # this is the register number to load (0)
+    #     0b00001000,  # this is the value to load (number 8)
+    #     0b01000111,  # PRN R0 # this instruction is to print
+    #     0b00000000,  # this is register 0, the value that above instruction prints
+    #     0b00000001,  # HLT # this is the halt
+    # ]
 
-        for instruction in program:
-            self.ram[address] = instruction
-            address += 1
+    # for instruction in program:
+    #     self.ram[address] = instruction
+    #     address += 1
 
     def alu(self, op, reg_a, reg_b):
         """ALU operations."""
@@ -46,6 +60,8 @@ class CPU:
         if op == "ADD":
             self.reg[reg_a] += self.reg[reg_b]
         # elif op == "SUB": etc
+        elif op == "MUL":
+            self.reg[reg_a] * self.reg[reg_b]
         else:
             raise Exception("Unsupported ALU operation")
 
@@ -78,37 +94,21 @@ class CPU:
         while self.running == True:
 
             IR = self.ram[self.pc]
-
-            # opco = IR[:2]  # the op code is the first two or "AA"
-            # aluOp = IR[2:3]  # the alu operation is "b"
-            # movePc = IR[3:4]  # this is the amount to move the pc
-            # instructId = IR[4:]  # this is the instruction ID
-
-            # binary 0b or 0B
-            # print("For 1010, int is:", int('1010', 2))
-            # print("For 0b1010, int is:", int('0b1010', 2))
-            # THE ABOVE CODE IS A RESOURCE From PROGRAMMIZ.com
-
-            # if int(opco, 2) == 2:  # if there are two values (print, register, value)
-            #     # label the first operand
-            #     opA = self.ram_read(self.pc + 1)
-            #     # label the second operand
-            #     opB = self.ram_read(self.pc + 1)
-            # elif int(opco, 2) == 1:  # else if there is one value (print)
-            #     opA = self.ram_read(self.pc + 1)
-
             # this is the load
             if IR == 0b10000010:  # load instructions with ops above
-                opA = self.ram[self.pc + 1]
-                opB = self.ram[self.pc + 2]
+                opA = self.ram_read(self.pc + 1)
+                opB = self.ram_read(self.pc + 2)
                 self.reg[opA] = opB
                 self.pc += 3  # this uses 3 movements
             # this is the print
             elif IR == 0b01000111:
-                opA = self.ram[self.pc + 1]
+                opA = self.ram_read(self.pc + 1)
                 x = self.reg[opA]  # set the value to the printing value
                 print(x)  # print the value
                 self.pc += 2  # this takes two movements
+            elif IR == 0b10100010:
+                self.alu('MUL', opA, opB)
+                self.pc += 3
             elif IR == 0b00000001:  # halt
                 self.running = False  # set running to false
                 # self.pc += 1  # this takes one movement.
