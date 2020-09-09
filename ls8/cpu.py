@@ -12,6 +12,53 @@ class CPU:
         self.reg = [0] * 8
         self.ram = [0] * 256
         self.running = False
+        self.SP = 7
+        self.reg[self.SP] = 0xf4
+        self.branchtable = {}
+        self.branchtable[0b10000010] = self.handleLDI
+        self.branchtable[0b01000111] = self.handlePRN
+        self.branchtable[0b10100010] = self.handleMUL
+        self.branchtable[0b00000001] = self.handleHLT
+        self.branchtable[0b01000110] = self.handlePOP
+        self.branchtable[0b01000101] = self.handlePUSH
+
+    def handleLDI(self):  # load instructions with ops above
+        opA = self.ram_read(self.pc + 1)
+        opB = self.ram_read(self.pc + 2)
+        self.reg[opA] = opB
+        self.pc += 3  # this uses 3 movements
+
+    def handlePRN(self):
+        opA = self.ram_read(self.pc + 1)
+        x = self.reg[opA]  # set the value to the printing value
+        print(x)  # print the value
+        self.pc += 2  # this takes two movements
+
+    def handleMUL(self):
+        opA = self.ram_read(self.pc + 1)
+        opB = self.ram_read(self.pc + 2)
+        self.alu('MUL', opA, opB)
+        self.pc += 3
+
+    def handleHLT(self):
+        self.running = False  # set running to false
+        # self.pc += 1  # this takes one movement.
+
+    def handlePOP(self):
+        given_register = self.ram[self.pc + 1]
+        reg_address = self.reg[self.SP]
+        value_from_memory = self.ram[reg_address]
+        self.reg[given_register] = value_from_memory
+        self.reg[self.SP] += 1
+        self.pc += 2
+
+    def handlePUSH(self):
+        self.reg[self.SP] -= 1
+        given_register = self.ram[self.pc + 1]
+        value_in_memory = self.reg[given_register]
+        memory_address = self.reg[self.SP]
+        self.ram[memory_address] = value_in_memory
+        self.pc += 2
 
     def ram_read(self, MAR):
         return self.ram[MAR]
@@ -33,26 +80,14 @@ class CPU:
                     code_value = split_line[0].strip()
                     if code_value == '':
                         continue
+                    if code_value == "#":
+                        continue
                     num = code_value
-                    self.ram[address] = num
+                    self.ram[address] = int(num, 2)  # ER
                     address += 1
         except FileNotFoundError:
             print(f'{sys.argv[1]} file not found')
             sys.exit(2)
-
-    # program = [
-    #     # From print8.ls8
-    #     0b10000010,  # LDI R0,8   # THIS is the initial register number 0, load data
-    #     0b00000000,  # this is the register number to load (0)
-    #     0b00001000,  # this is the value to load (number 8)
-    #     0b01000111,  # PRN R0 # this instruction is to print
-    #     0b00000000,  # this is register 0, the value that above instruction prints
-    #     0b00000001,  # HLT # this is the halt
-    # ]
-
-    # for instruction in program:
-    #     self.ram[address] = instruction
-    #     address += 1
 
     def alu(self, op, reg_a, reg_b):
         """ALU operations."""
@@ -61,7 +96,7 @@ class CPU:
             self.reg[reg_a] += self.reg[reg_b]
         # elif op == "SUB": etc
         elif op == "MUL":
-            self.reg[reg_a] * self.reg[reg_b]
+            self.reg[reg_a] *= self.reg[reg_b]
         else:
             raise Exception("Unsupported ALU operation")
 
@@ -94,21 +129,8 @@ class CPU:
         while self.running == True:
 
             IR = self.ram[self.pc]
-            # this is the load
-            if IR == 0b10000010:  # load instructions with ops above
-                opA = self.ram_read(self.pc + 1)
-                opB = self.ram_read(self.pc + 2)
-                self.reg[opA] = opB
-                self.pc += 3  # this uses 3 movements
-            # this is the print
-            elif IR == 0b01000111:
-                opA = self.ram_read(self.pc + 1)
-                x = self.reg[opA]  # set the value to the printing value
-                print(x)  # print the value
-                self.pc += 2  # this takes two movements
-            elif IR == 0b10100010:
-                self.alu('MUL', opA, opB)
-                self.pc += 3
-            elif IR == 0b00000001:  # halt
-                self.running = False  # set running to false
-                # self.pc += 1  # this takes one movement.
+            if IR in self.branchtable:
+                do = self.branchtable[IR]
+                do()
+            else:
+                self.running = False
