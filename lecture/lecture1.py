@@ -1,4 +1,5 @@
 import sys
+
 # PROGRAM COUNTER = pc.. built into computer. used to increment count
 # operation coes
 # OP Codes
@@ -20,20 +21,7 @@ ADD = 6
 #     HALT  # 2
 # ]  # memory is simply an array
 
-memory = [
-    SAVE_REG,
-    2,  # VALUE 2
-    1,  # REGISTER 1
-    SAVE_REG,
-    2,  # VALUE 2
-    2,  # REGISTER 2
-    ADD,
-    1,  # REGISTER 1
-    2,  # REGISTER 2
-    PRINT_REG,
-    1,  # REGISTER 1
-    HALT
-]
+memory = [0] * 256
 
 running = True
 
@@ -41,6 +29,46 @@ registers = [0] * 8
 
 pc = 0
 
+# open a file and load into memory
+
+#### LECTURE 2#####
+
+# get file name from command line arguments
+print(sys.argv)
+
+if len(sys.argv) != 2:
+    print("Usage: example_cpu.py filename")
+    sys.exit(1)  # 0 error means good, 1 error means crash
+
+
+def load_memory(filename):
+    # open file and load into mem
+    address = 0
+
+    try:
+        with open(sys.argv[1]) as f:  # open file
+            for line in f:
+                # break up lines on char that creates a comment
+                split_line = line.split('#')  # split at the comment marker
+                print(split_line)  # check the split
+
+                # Removes whitespace and \n char
+                # take the split line at 0, where the code should be and strip it
+                code_value = split_line[0].strip()
+                # Make sure that the value before the # symbol is not empty
+                if split_line[0] == '':
+                    continue
+
+                num = int(code_value)
+                memory[address] = num
+                address += 1
+
+    except FileNotFoundError:
+        print(f"{sys.argv[1]} file not found")
+        sys.exit(2)
+
+
+load_memory(sys.argv[1])
 while running:
     # read line by line from memory
     instruction = memory[pc]
