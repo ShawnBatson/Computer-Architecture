@@ -11,6 +11,8 @@ PRINT_REG = 5
 ADD = 6
 PUSH = 7
 POP = 8
+CALL = 9
+RET = 10
 
 
 # memory = [
@@ -140,6 +142,23 @@ while running:
         # incrememt the stack pointer
         registers[SP] += 1
         pc += 2
+
+    elif instruction == CALL:
+        # Get the given register in the operand
+        given_register = memory[pc + 1]
+        # Store the return address pc + 2 onto the stack
+        # decrement the stack pointer
+        registers[SP] -= 1
+        # write the return address
+        memory[registers[SP]] = pc + 2
+        # SET PC TO THE VALUE INSIDE GIVEN REGISTER
+        pc = registers[given_register]
+
+    elif instruction == RET:
+        # set pc to the value at the stop of the stack
+        pc = memory[registers[SP]]
+        # POP from stack
+        registers[SP] = 1
 
     else:
         print(f'Unknown instruction {instruction}')
