@@ -14,6 +14,7 @@ class CPU:
         self.running = False
         self.SP = 7
         self.reg[self.SP] = 0xf4
+        self.FL = 0
         self.branchtable = {}
         self.branchtable[0b10000010] = self.handleLDI
         self.branchtable[0b01000111] = self.handlePRN
@@ -24,6 +25,10 @@ class CPU:
         self.branchtable[0b01010000] = self.handleCALL
         self.branchtable[0b00010001] = self.handleRET
         self.branchtable[0b10100000] = self.handleADD
+        self.branchtable[0b10100111] = self.handleCMP
+        self.branchtable[0b01010100] = self.handleJMP
+        self.branchtable[0b01010101] = self.handleJEQ
+        self.branchtable[0b01010110] = self.handleJNE
 
     def handleLDI(self):  # load instructions with ops above
         opA = self.ram_read(self.pc + 1)
@@ -83,6 +88,30 @@ class CPU:
         self.alu('ADD', opA, opB)
         self.pc += 3
 
+    def handleCMP(self):
+        opA = self.ram_read(self.pc + 1)  # set opA
+        opB = self.ram_read(self.pc + 2)  # set opB
+        self.alu('CMP', opA, opB)  # set the ALU
+        self.pc += 3  # move the pc
+
+    def handleJMP(self):
+        opA = self.ram_read(self.pc + 1)  # set the operand
+        self.pc = self.reg[opA]  # set the pc to the operand chosen
+
+    def handleJEQ(self):
+        opA = self.ram_read(self.pc + 1)
+        if self.fl == 1:
+            self.pc = self.reg[opA]
+        else:
+            self.pc += 2
+
+    def handleJNE(self):
+        opA = self.ram_read(self.pc + 1)
+        if self.fl != 1:
+            self.pc = self.reg[opA]
+        else:
+            self.pc += 2
+
     def ram_read(self, MAR):
         return self.ram[MAR]
 
@@ -120,6 +149,13 @@ class CPU:
         # elif op == "SUB": etc
         elif op == "MUL":
             self.reg[reg_a] *= self.reg[reg_b]
+        elif op == 'CMP':
+            if self.reg[reg_a] < self.reg[reg_b]:  # if reg a less reg b,
+                self.fl = 0b00000100  # set fl to L
+            elif self.reg[reg_a] > self.reg[reg_b]:  # if reg a greater reg b
+                self.fl = 0b00000010  # set fl to G
+            elif self.reg[reg_a] == self.reg[reg_b]:
+                self.fl = 0b00000001  # set fl to E
         else:
             raise Exception("Unsupported ALU operation")
 
