@@ -21,6 +21,9 @@ class CPU:
         self.branchtable[0b00000001] = self.handleHLT
         self.branchtable[0b01000110] = self.handlePOP
         self.branchtable[0b01000101] = self.handlePUSH
+        self.branchtable[0b01010000] = self.handleCALL
+        self.branchtable[0b00010001] = self.handleRET
+        self.branchtable[0b10100000] = self.handleADD
 
     def handleLDI(self):  # load instructions with ops above
         opA = self.ram_read(self.pc + 1)
@@ -45,20 +48,40 @@ class CPU:
         # self.pc += 1  # this takes one movement.
 
     def handlePOP(self):
-        given_register = self.ram[self.pc + 1]
-        reg_address = self.reg[self.SP]
-        value_from_memory = self.ram[reg_address]
+        given_register = self.ram[self.pc + 1]  # set the register
+        reg_address = self.reg[self.SP]  # set the register address
+        value_from_memory = self.ram[reg_address]  # set the value
         self.reg[given_register] = value_from_memory
-        self.reg[self.SP] += 1
-        self.pc += 2
+        self.reg[self.SP] += 1  # move the SP
+        self.pc += 2  # move the PC
 
     def handlePUSH(self):
-        self.reg[self.SP] -= 1
-        given_register = self.ram[self.pc + 1]
-        value_in_memory = self.reg[given_register]
-        memory_address = self.reg[self.SP]
-        self.ram[memory_address] = value_in_memory
-        self.pc += 2
+        self.reg[self.SP] -= 1  # move the SP
+        given_register = self.ram[self.pc + 1]  # set the register
+        value_in_memory = self.reg[given_register]  # set the value
+        memory_address = self.reg[self.SP]  # set the memory address
+        self.ram[memory_address] = value_in_memory  # align
+        self.pc += 2  # move the PC
+
+    def handleCALL(self):
+        given_register = self.ram[self.pc + 1]  # set the register
+        self.reg[self.SP] -= 1  # move the sp
+        r = self.pc + 2  # save the spot
+        self.ram[self.reg[self.SP]] = r  # point to the return
+        # set the go_to variable for the subroutine
+        go_to = self.reg[given_register]
+        self.pc = go_to  # move the pc to the go_to
+
+    def handleRET(self):
+        r = self.ram[self.reg[self.SP]]  # return to -
+        self.reg[self.SP] += 1  # move the SP one
+        self.pc = r  # move the pc
+
+    def handleADD(self):
+        opA = self.ram_read(self.pc + 1)
+        opB = self.ram_read(self.pc + 2)
+        self.alu('ADD', opA, opB)
+        self.pc += 3
 
     def ram_read(self, MAR):
         return self.ram[MAR]
