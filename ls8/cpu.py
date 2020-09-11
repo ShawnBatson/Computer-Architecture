@@ -29,6 +29,14 @@ class CPU:
         self.branchtable[0b01010100] = self.handleJMP
         self.branchtable[0b01010101] = self.handleJEQ
         self.branchtable[0b01010110] = self.handleJNE
+        # Add the ALU operations: `AND` `OR` `XOR` `NOT` `SHL` `SHR` `MOD`
+        self.branchtable[0b10101000] = self.handleAND
+        self.branchtable[0b10101010] = self.handleOR
+        self.branchtable[0b10101011] = self.handleXOR
+        self.branchtable[0b01101001] = self.handleNOT
+        self.branchtable[0b10101100] = self.handleSHL
+        self.branchtable[0b10101101] = self.handleSHR
+        self.branchtable[0b10100100] = self.handleMOD
 
     def handleLDI(self):  # load instructions with ops above
         opA = self.ram_read(self.pc + 1)
@@ -111,6 +119,45 @@ class CPU:
             self.pc = self.reg[opA]
         else:
             self.pc += 2
+# Add the ALU operations: `AND` `OR` `XOR` `NOT` `SHL` `SHR` `MOD`
+
+    def handleAND(self):
+        opA = self.ram_read(self.pc + 1)  # set opA
+        opB = self.ram_read(self.pc + 2)  # set opB
+        # throw into ALU
+        result = self.alu("AND", self.reg[opA], self.reg[opB])
+        self.reg[opA] = result  # set the result to opA for the "and"
+        self.pc += 3
+
+    def handleOR(self):
+        opA = self.ram_read(self.pc + 1)  # set opA
+        opB = self.ram_read(self.pc + 2)  # set opB
+        result = self.alu("OR", self.reg[opA], self.reg[opB])
+        self.reg[opA] = result
+        self.pc += 3
+
+    def handleXOR(self):
+        opA = self.ram_read(self.pc + 1)  # set opA
+        opB = self.ram_read(self.pc + 2)  # set opB
+        result = self.alu("XOR", self.reg[opA], self.reg[opB])
+        self.reg[opA] = result
+        self.pc += 3
+
+    def handleNOT(self):
+        opA = self.ram_read(self.pc + 1)  # set opA
+        opB = self.ram_read(self.pc + 2)  # set opB
+        result = self.alu("NOT", self.reg[opA], self.reg[opB])
+        self.reg[opA] = result
+        self.pc += 2
+
+    def handleSHL(self):
+        pass
+
+    def handleSHR(self):
+        pass
+
+    def handleMOD(self):
+        pass
 
     def ram_read(self, MAR):
         return self.ram[MAR]
@@ -156,6 +203,15 @@ class CPU:
                 self.fl = 0b00000010  # set fl to G
             elif self.reg[reg_a] == self.reg[reg_b]:
                 self.fl = 0b00000001  # set fl to E
+        # Add the ALU operations: `AND` `OR` `XOR` `NOT`
+        elif op == "AND":
+            return reg_a & reg_b
+        elif op == "OR":
+            return reg_a | reg_b
+        elif op == "XOR":
+            return reg_a ^ reg_b
+        elif op == "NOT":
+            return ~reg_a
         else:
             raise Exception("Unsupported ALU operation")
 
