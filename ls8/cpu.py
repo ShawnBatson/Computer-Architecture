@@ -14,6 +14,7 @@ class CPU:
         self.running = False
         self.SP = 7
         self.reg[self.SP] = 0xf4
+        self.FL = 0
         self.branchtable = {}
         self.branchtable[0b10000010] = self.handleLDI
         self.branchtable[0b01000111] = self.handlePRN
@@ -24,6 +25,19 @@ class CPU:
         self.branchtable[0b01010000] = self.handleCALL
         self.branchtable[0b00010001] = self.handleRET
         self.branchtable[0b10100000] = self.handleADD
+        self.branchtable[0b10100111] = self.handleCMP
+        self.branchtable[0b01010100] = self.handleJMP
+        self.branchtable[0b01010101] = self.handleJEQ
+        self.branchtable[0b01010110] = self.handleJNE
+        # Add the ALU operations: `AND` `OR` `XOR` `NOT` `SHL` `SHR` `MOD`
+        self.branchtable[0b10101000] = self.handleAND
+        self.branchtable[0b10101010] = self.handleOR
+        self.branchtable[0b10101011] = self.handleXOR
+        self.branchtable[0b01101001] = self.handleNOT
+        self.branchtable[0b10101100] = self.handleSHL
+        self.branchtable[0b10101101] = self.handleSHR
+        self.branchtable[0b10100100] = self.handleMOD
+        self.branchtable[0b10001000] = self.handleADDI  # not sure if correct
 
     def handleLDI(self):  # load instructions with ops above
         opA = self.ram_read(self.pc + 1)
@@ -83,6 +97,94 @@ class CPU:
         self.alu('ADD', opA, opB)
         self.pc += 3
 
+    def handleCMP(self):
+        opA = self.ram_read(self.pc + 1)  # set opA
+        opB = self.ram_read(self.pc + 2)  # set opB
+        self.alu('CMP', opA, opB)  # set the ALU
+        self.pc += 3  # move the pc
+
+    def handleJMP(self):
+        opA = self.ram_read(self.pc + 1)  # set the operand
+        self.pc = self.reg[opA]  # set the pc to the operand chosen
+
+    def handleJEQ(self):
+        opA = self.ram_read(self.pc + 1)
+        if self.fl == 1:
+            self.pc = self.reg[opA]
+        else:
+            self.pc += 2
+
+    def handleJNE(self):
+        opA = self.ram_read(self.pc + 1)
+        if self.fl != 1:
+            self.pc = self.reg[opA]
+        else:
+            self.pc += 2
+# Add the ALU operations: `AND` `OR` `XOR` `NOT` `SHL` `SHR` `MOD`
+
+    def handleAND(self):
+        opA = self.ram_read(self.pc + 1)  # set opA
+        opB = self.ram_read(self.pc + 2)  # set opB
+        # throw into ALU
+        result = self.alu("AND", self.reg[opA], self.reg[opB])
+        self.reg[opA] = result  # set the result to opA for the "and"
+        self.pc += 3
+
+    def handleOR(self):
+        opA = self.ram_read(self.pc + 1)  # set opA
+        opB = self.ram_read(self.pc + 2)  # set opB
+        result = self.alu("OR", self.reg[opA], self.reg[opB])
+        self.reg[opA] = result
+        self.pc += 3
+
+    def handleXOR(self):
+        opA = self.ram_read(self.pc + 1)  # set opA
+        opB = self.ram_read(self.pc + 2)  # set opB
+        result = self.alu("XOR", self.reg[opA], self.reg[opB])
+        self.reg[opA] = result
+        self.pc += 3
+
+    def handleNOT(self):
+        opA = self.ram_read(self.pc + 1)  # set opA
+        opB = self.ram_read(self.pc + 2)  # set opB
+        result = self.alu("NOT", self.reg[opA], self.reg[opB])
+        self.reg[opA] = result
+        self.pc += 2
+
+    def handleSHL(self):
+        opA = self.ram_read(self.pc + 1)  # set opA
+        opB = self.ram_read(self.pc + 2)  # set opB
+        result = self.alu("SHL", self.reg[opA], self.reg[opB])
+        self.reg[opA] = result
+        self.pc += 3
+
+    def handleSHR(self):
+        opA = self.ram_read(self.pc + 1)  # set opA
+        opB = self.ram_read(self.pc + 2)  # set opB
+        result = self.alu("SHR", self.reg[opA], self.reg[opB])
+        self.reg[opA] = result
+        self.pc += 3
+
+    def handleMOD(self):
+        opA = self.ram_read(self.pc + 1)  # set opA
+        opB = self.ram_read(self.pc + 2)  # set opB
+        if self.reg[opB] == 0:
+            print("You cannot divide by 0")
+            self.handleHLT()
+        else:
+            result = self.alu("MOD", self.reg[opA], self.reg[opB])
+            self.reg[opA] = result
+            self.pc += 3
+
+    # THIS IS A STRETH NOT IN BRANCH TABLE> ASK ABOUT DURING 1:1
+    def handleADDI(self):  # NOT IN BRANCH TABLE YET. ASK ABOUT DURING 1:1
+        opA = self.ram_read(self.pc + 1)  # set opA Destination
+        opB = self.ram_read(self.pc + 2)  # set opB Source
+        opC = self.ram_read(self.pc + 3)  # set opC Immediate intiger
+        result = int(self.reg[opB]) + int(self.reg[opC])
+        self.reg[opA] = result
+        self.pc += 4
+
     def ram_read(self, MAR):
         return self.ram[MAR]
 
@@ -120,6 +222,28 @@ class CPU:
         # elif op == "SUB": etc
         elif op == "MUL":
             self.reg[reg_a] *= self.reg[reg_b]
+        elif op == 'CMP':
+            if self.reg[reg_a] < self.reg[reg_b]:  # if reg a less reg b,
+                self.fl = 0b00000100  # set fl to L
+            elif self.reg[reg_a] > self.reg[reg_b]:  # if reg a greater reg b
+                self.fl = 0b00000010  # set fl to G
+            elif self.reg[reg_a] == self.reg[reg_b]:
+                self.fl = 0b00000001  # set fl to E
+        # Add the ALU operations: `AND` `OR` `XOR` `NOT`
+        elif op == "AND":
+            return reg_a & reg_b
+        elif op == "OR":
+            return reg_a | reg_b
+        elif op == "XOR":
+            return reg_a ^ reg_b
+        elif op == "NOT":
+            return ~reg_a
+        elif op == "SHL":
+            return reg_a << reg_b
+        elif op == "SHR":
+            return reg_a >> reg_b
+        elif op == "MOD":
+            return int(reg_a) % int(reg_b)
         else:
             raise Exception("Unsupported ALU operation")
 

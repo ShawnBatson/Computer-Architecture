@@ -158,7 +158,7 @@ while running:
         # set pc to the value at the stop of the stack
         pc = memory[registers[SP]]
         # POP from stack
-        registers[SP] = 1
+        registers[SP] += 1
 
     else:
         print(f'Unknown instruction {instruction}')
