@@ -151,13 +151,29 @@ class CPU:
         self.pc += 2
 
     def handleSHL(self):
-        pass
+        opA = self.ram_read(self.pc + 1)  # set opA
+        opB = self.ram_read(self.pc + 2)  # set opB
+        result = self.alu("SHL", self.reg[opA], self.reg[opB])
+        self.reg[opA] = result
+        self.pc += 3
 
     def handleSHR(self):
-        pass
+        opA = self.ram_read(self.pc + 1)  # set opA
+        opB = self.ram_read(self.pc + 2)  # set opB
+        result = self.alu("SHR", self.reg[opA], self.reg[opB])
+        self.reg[opA] = result
+        self.pc += 3
 
     def handleMOD(self):
-        pass
+        opA = self.ram_read(self.pc + 1)  # set opA
+        opB = self.ram_read(self.pc + 2)  # set opB
+        if self.reg[opB] == 0:
+            print("You cannot divide by 0")
+            self.handleHLT()
+        else:
+            result = self.alu("MOD", self.reg[opA], self.reg[opB])
+            self.reg[opA] = result
+            self.pc += 3
 
     def ram_read(self, MAR):
         return self.ram[MAR]
@@ -212,6 +228,12 @@ class CPU:
             return reg_a ^ reg_b
         elif op == "NOT":
             return ~reg_a
+        elif op == "SHL":
+            return reg_a << reg_b
+        elif op == "SHR":
+            return reg_a >> reg_b
+        elif op == "MOD":
+            return int(reg_a) % int(reg_b)
         else:
             raise Exception("Unsupported ALU operation")
 
