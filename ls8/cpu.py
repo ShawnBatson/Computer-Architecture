@@ -175,6 +175,15 @@ class CPU:
             self.reg[opA] = result
             self.pc += 3
 
+    # THIS IS A STRETH NOT IN BRANCH TABLE> ASK ABOUT DURING 1:1
+    def handleADDI(self):  # NOT IN BRANCH TABLE YET. ASK ABOUT DURING 1:1
+        opA = self.ram_read(self.pc + 1)  # set opA Destination
+        opB = self.ram_read(self.pc + 2)  # set opB Source
+        opC = self.ram_read(self.pc + 3)  # set opC Immediate intiger
+        result = self.reg[opB] + self.reg[opC]
+        self.reg[opA] = result
+        self.pc += 4
+
     def ram_read(self, MAR):
         return self.ram[MAR]
 
