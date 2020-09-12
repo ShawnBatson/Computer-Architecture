@@ -37,6 +37,7 @@ class CPU:
         self.branchtable[0b10101100] = self.handleSHL
         self.branchtable[0b10101101] = self.handleSHR
         self.branchtable[0b10100100] = self.handleMOD
+        self.branchtable[0b10001000] = self.handleADDI  # not sure if correct
 
     def handleLDI(self):  # load instructions with ops above
         opA = self.ram_read(self.pc + 1)
@@ -180,7 +181,7 @@ class CPU:
         opA = self.ram_read(self.pc + 1)  # set opA Destination
         opB = self.ram_read(self.pc + 2)  # set opB Source
         opC = self.ram_read(self.pc + 3)  # set opC Immediate intiger
-        result = self.reg[opB] + self.reg[opC]
+        result = int(self.reg[opB]) + int(self.reg[opC])
         self.reg[opA] = result
         self.pc += 4
 
